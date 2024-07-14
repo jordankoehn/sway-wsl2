@@ -1,0 +1,5 @@
+[Unit]
+Description=Sync windows clipboard to wayland
+
+[Service]
+ExecStart=%h/.local/bin/win-to-clipboard

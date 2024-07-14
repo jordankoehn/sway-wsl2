@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Inidcates that win-to-clipboard just copied the clipboard to wayland,
+# No need to copy the clipboard contents back to windows
+if [[ -f /tmp/win-to-clipboard ]]; then
+  rm /tmp/win-to-clipboard
+else
+  /mnt/c/windows/system32/clip.exe
+fi

@@ -1,0 +1,24 @@
+# When wayland clipboard changes, run clipboard-to-win
+exec wl-paste --watch clipboard-to-win
+# Run win to clipboard service to sync windows clipboard to wayland
+exec systemctl --user restart win-to-clipboard
+
+# Create window(s) for additional monitors
+# Comment out to only have one display, repeat n times for additional displays
+# First display is WL-1, each one after increments by 1
+# TODO: detect number of windows displays dynamically
+exec swaymsg create_output
+
+# Assign workspaces to output
+# If output doesn't exist, defaults to WL-1
+workspace 1 output WL-1
+workspace 2 output WL-1
+workspace 3 output WL-1
+workspace 4 output WL-1
+workspace 5 output WL-1
+workspace 6 output WL-1
+workspace 7 output WL-1
+workspace 8 output WL-2
+workspace 9 output WL-2
+workspace 10 output WL-2
+
