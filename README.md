@@ -1,6 +1,8 @@
 # Sway WSL2
 Sway Wayland compositor, running in WSL2 via Microsoft's [WSLg](https://github.com/microsoft/wslg). This is dedicated to all the people out there who are stuck using Windows for work
 
+![image](https://github.com/user-attachments/assets/96f5bd1a-eb1f-41d0-97c2-5e3b5484748b)
+
 ## Working
 * Multiple monitors
 * Shared clipboard
