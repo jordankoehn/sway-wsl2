@@ -1,66 +1,92 @@
 #!/bin/bash
 
-getWindowsClipboard() {
-  # Often the clipboard would come up empty, so repeat until it has data
-  local clipboard
-  while [[ -z "$clipboard" ]]; do
-    clipboard=$(/mnt/c/windows/System32/WindowsPowerShell/v1.0/powershell.exe -c Get-Clipboard)
-  done
+CLIPBOARD_TO_WIN=/tmp/clipboard-to-win
+WIN_TO_CLIPBOARD=/tmp/win-to-clipboard
 
-  echo -n "$clipboard"
-}
-
-monitorCurrentWindow() {
+monitorWindowsClipboard() {
   # https://stackoverflow.com/a/70010344
-  /mnt/c/windows/System32/WindowsPowerShell/v1.0/powershell.exe -c '
+  /mnt/c/windows/System32/WindowsPowerShell/v1.0/powershell.exe -noprofile -command '
 Add-Type @"
- using System;
- using System.Runtime.InteropServices;
- using System.Text;
- public class APIFuncs
- {
- [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
- public static extern int GetWindowText(IntPtr hwnd,StringBuilder
- lpString, int cch);
- [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
- public static extern IntPtr GetForegroundWindow();
- [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
- public static extern Int32 GetWindowThreadProcessId(IntPtr hWnd,out
- Int32 lpdwProcessId);
- [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
- public static extern Int32 GetWindowTextLength(IntPtr hWnd);
- }
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public class APIFuncs
+{
+[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+public static extern int GetWindowText(IntPtr hwnd,StringBuilder
+lpString, int cch);
+[DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+public static extern IntPtr GetForegroundWindow();
+[DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+public static extern Int32 GetWindowThreadProcessId(IntPtr hWnd,out
+Int32 lpdwProcessId);
+[DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+public static extern Int32 GetWindowTextLength(IntPtr hWnd);
+}
 "@
 
+# https://stackoverflow.com/a/75871005
+# Define the p/invoke signatures for using the WinAPI clipboard functions.
+Add-Type -NameSpace WinApi -Name ClipboardSeq -MemberDefinition "[DllImport(`"user32.dll`")] public static extern uint GetClipboardSequenceNumber();"
+$inWsl = $true
+$lastSequenceNumber = [WinApi.ClipboardSeq]::GetClipboardSequenceNumber()
+
 while(1) {
-	$w = [apifuncs]::GetForegroundWindow()
-	$len = [apifuncs]::GetWindowTextLength($w)
-	$sb = New-Object text.stringbuilder -ArgumentList ($len + 1)
-	$rtnlen = [apifuncs]::GetWindowText($w,$sb,$sb.Capacity)
-	write-host "Window Title: $($sb.tostring())"
-	sleep -Milliseconds 250
-}
-'
+  $w = [apifuncs]::GetForegroundWindow()
+  $len = [apifuncs]::GetWindowTextLength($w)
+  $sb = New-Object text.stringbuilder -ArgumentList ($len + 1)
+  $rtnlen = [apifuncs]::GetWindowText($w,$sb,$sb.Capacity)
+  $currWindow = $sb.tostring()
+
+  #write-host "Window Title: $($currWindow)"
+  if ($currWindow -like "*wlroots*") {
+    if (!$inWsl) {
+      # In WSL, check if clipboard has changed
+      $inWsl = $true
+      $newSequenceNumber = [WinApi.ClipboardSeq]::GetClipboardSequenceNumber()
+      if( $lastSequenceNumber -ne $newSequenceNumber ) {
+        $lastSequenceNumber = $newSequenceNumber
+
+        # I believe copying non-text contents from windows -> linux clipboard is not possible
+        $clipboard = (Get-Clipboard -Raw)
+        $clipboardBytes = [System.Text.Encoding]::UTF8.GetBytes($clipboard)
+        $encodedClipboard = [Convert]::ToBase64String($clipboardBytes)
+
+        # Output clipboard contents as base64
+        Write-Output $encodedClipboard
+      }
+    }
+  } else {
+    if ($inWsl) {
+      # No longer in WSL, track current clipboard state
+      $inWsl = $false
+      $lastSequenceNumber = [WinApi.ClipboardSeq]::GetClipboardSequenceNumber()
+    }
+  }
+  sleep -Milliseconds 200
+}'
 }
 
-processCurrentWindow() {
+updateWslClipboard() {
   if ((${#} == 0)); then
-    while read -r window; do
-      # Checks if we've gone from a non-wsl window to wsl, then writes to the wayland keyboard
-      if [[ -z $inWSL && $window == *wlroots* ]]; then
-        inWSL=1
-        echo "Wrote windows clipboard to wayland clipboard"
-
-        # Indicate to clipboard-to-win that a copy just occured
-        touch /tmp/win-to-clipboard
-
-        wl-copy <<<$(getWindowsClipboard)
-        #wl-copy <<<$(/mnt/c/windows/System32/WindowsPowerShell/v1.0/powershell.exe -c Get-Clipboard)
-      elif [[ $window != *wlroots* ]]; then
-        unset inWSL
+    while read -r clipboard; do
+      # Cover edge case in which user goes from not wsl to wsl then quickly copies something. This is very unlikely to happen
+      if [[ -f $CLIPBOARD_TO_WIN ]]; then
+        current_ms=$(date +%s%3N)
+        modified_ms=$(date -r $CLIPBOARD_TO_WIN +%s%3N)
+        diff=$((current_ms - modified_ms))
+        if [[ $diff -lt 1000 ]]; then
+          #echo "Less than 1 second since wayland clipboard was updated, skip copying windows keyboard"
+          continue
+        fi
       fi
+
+      # Indicate to clipboard-to-win that a copy just occured
+      touch $WIN_TO_CLIPBOARD
+
+      printf "$clipboard" | base64 --decode 2>/dev/null | tr -d '\r' | wl-copy
     done
   fi
 }
 
-monitorCurrentWindow | processCurrentWindow
+monitorWindowsClipboard | updateWslClipboard

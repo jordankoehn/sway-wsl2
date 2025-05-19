@@ -53,3 +53,7 @@ By default, Sway defaults to the windows key as the super key. This is problemat
 
 * Kitty terminal looks very low resolution. Uncomment some lines in ~/.bashrc if you'd like to try using kitty. I've had good luck with xfce4-terminal. All other programs render as they should
 * Expect the UI to crash if you put your PC to sleep, have network changes, if you change the windows taskbar setting to auto hide while Sway is running, or just at random. YMMV, I generally go most days without any crashes
+
+## Versions
+
+* **05.18.25:** - Greatly improve performance of Windows -> WSL clipboard synchronization.

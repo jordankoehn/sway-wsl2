@@ -1,9 +1,13 @@
 #!/bin/bash
 
+CLIPBOARD_TO_WIN=/tmp/clipboard-to-win
+WIN_TO_CLIPBOARD=/tmp/win-to-clipboard
+
 # Inidcates that win-to-clipboard just copied the clipboard to wayland,
 # No need to copy the clipboard contents back to windows
-if [[ -f /tmp/win-to-clipboard ]]; then
-  rm /tmp/win-to-clipboard
+if [[ -f $WIN_TO_CLIPBOARD ]]; then
+  rm $WIN_TO_CLIPBOARD
 else
+  touch $CLIPBOARD_TO_WIN
   /mnt/c/windows/system32/clip.exe
 fi
