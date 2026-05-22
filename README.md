@@ -1,19 +1,23 @@
 # Sway WSL2
+
 Sway Wayland compositor, running in WSL2 via Microsoft's [WSLg](https://github.com/microsoft/wslg). This is dedicated to all the people out there who are stuck using Windows for work
 
 ![image](https://github.com/user-attachments/assets/96f5bd1a-eb1f-41d0-97c2-5e3b5484748b)
 
 ## Working
+
 * Multiple monitors
 * Shared clipboard
 * Audio
 
 ## Not Working
+
 * ?
 
 ## To Install Manually
 
 Assuming sway is already installed (I use [this](https://github.com/EndeavourOS-Community-Editions/sway))
+
 ``` shell
 git clone https://github.com/jordankoehn/sway-wsl2.git
 cd sway-wsl2
@@ -56,4 +60,5 @@ By default, Sway defaults to the windows key as the super key. This is problemat
 
 ## Versions
 
+* **05.22.26:** - Automate moving sway windows to desired monitors on launch. YMMV on how reliable it is.
 * **05.18.25:** - Greatly improve performance of Windows -> WSL clipboard synchronization.

@@ -32,7 +32,7 @@ if [[ $PATH != *"$HOME/.local/bin"* ]]; then
   echo "Adding \$HOME/.local/bin to PATH via ~/.bashrc. Restart your shell or run source ~/.bashrc to refresh"
 
   tee -a ~/.bashrc >/dev/null <<-'EOF'
-	if [[ -d $HOME/.local/bin ]]; then
+	if [[ -d $HOME/.local/bin && ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
 	  export PATH=$HOME/.local/bin:$PATH
 	fi
 

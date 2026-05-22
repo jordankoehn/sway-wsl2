@@ -3,11 +3,16 @@ exec wl-paste --watch clipboard-to-win
 # Run win to clipboard service to sync windows clipboard to wayland
 exec systemctl --user restart win-to-clipboard
 
-# Create window(s) for additional monitors
-# Comment out to only have one display, repeat n times for additional displays
+# Maximize and create virtual displays for additional monitors
+# Uncomment to add a second display, or repeat n times for additional displays
 # First display is WL-1, each one after increments by 1
-# TODO: detect number of windows displays dynamically
-exec swaymsg create_output
+# TODO: detect number of windows displays dynamically and prompt user
+#
+# maximize-window.sh <WindowTitleFilter> <MonitorIndex>
+# MonitorIndex: 0 is Primary, 1 is Secondary, etc.
+# This script will move a sway virtual display to a monitor index, snap it to the right so it's only on that display, then maximize the window
+#
+exec ~/.config/sway/scripts/maximize-window.sh WL-1 0 && swaymsg create_output && ~/.config/sway/scripts/maximize-window.sh WL-2 1
 
 # Assign workspaces to output
 # If output doesn't exist, defaults to WL-1
